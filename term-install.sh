@@ -99,7 +99,7 @@ install_tool "zoxide" "curl -sS https://raw.githubusercontent.com/ajeetdsouza/zo
 install_tool "zellij" "curl -Lo zellij.tar.gz https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz && tar -xzvf zellij.tar.gz -C /usr/local/bin && rm zellij.tar.gz"
 
 # Install LazyGit
-install_tool "lazygit" "LAZYGIT_VERSION=\$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | grep 'tag_name' | cut -d '"' -f 4) && curl -Lo lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/download/\$LAZYGIT_VERSION/lazygit_\$LAZYGIT_VERSION_Linux_x86_64.tar.gz && tar -xzvf lazygit.tar.gz -C /usr/local/bin && rm lazygit.tar.gz"
+install_tool "lazygit" "LAZYGIT_VERSION=\$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | grep 'tag_name' | cut -d '\"' -f 4) && curl -Lo lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/download/\$LAZYGIT_VERSION/lazygit_\$LAZYGIT_VERSION_Linux_x86_64.tar.gz && tar -xzvf lazygit.tar.gz -C /usr/local/bin && rm lazygit.tar.gz"
 
 # Apply changes
 source ~/.zshrc
