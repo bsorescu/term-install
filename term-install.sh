@@ -95,9 +95,9 @@ fi
 
 # Install Yazi
 if ! is_installed yazi; then
-	curl -Lo yazi.tar.gz https://github.com/sxyazi/yazi/releases/latest/download/yazi-x86_64-unknown-linux-gnu.tar.gz &&
-		tar -xzvf yazi.tar.gz -C /usr/local/bin || echo "Yazi installation failed"
-	rm -f yazi.tar.gz
+	curl -Lo yazi.zip https://github.com/sxyazi/yazi/releases/download/v0.4.2/yazi-x86_64-unknown-linux-gnu.zip &&
+		unzip yazi.zip -d /usr/local/bin || echo "Yazi installation failed"
+	rm -f yazi.zip
 else
 	echo "Yazi is already installed."
 fi
