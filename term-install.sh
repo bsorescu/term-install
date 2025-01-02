@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Log file setup
+LOG_FILE="install_script.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+
 # Ensure the script is run as root or with sudo
 if [[ $EUID -ne 0 ]]; then
 	echo "This script must be run as root. Use sudo."
@@ -15,17 +19,20 @@ else
 	exit 1
 fi
 
-# Update package lists and install dependencies
-if [ "$OS" == "ubuntu" ]; then
-	apt update && apt upgrade -y
-	apt install -y curl git unzip build-essential
-elif [ "$OS" == "fedora" ]; then
-	dnf update -y
-	dnf install -y curl git unzip gcc make
-else
-	echo "Unsupported operating system."
-	exit 1
-fi
+# Update package lists and install basic dependencies
+update_system() {
+	if [ "$OS" == "ubuntu" ]; then
+		apt update && apt upgrade -y
+		apt install -y curl git unzip build-essential gpg
+	elif [ "$OS" == "fedora" ]; then
+		dnf update -y
+		dnf install -y curl git unzip gcc make
+	else
+		echo "Unsupported operating system."
+		exit 1
+	fi
+}
+update_system
 
 # Function to check if a program is installed
 is_installed() {
@@ -33,57 +40,43 @@ is_installed() {
 }
 
 # Add ~/.local/bin to PATH if not already present
-if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-	echo 'export PATH="$HOME/.local/bin:$PATH"' >>~/.zshrc
-	export PATH="$HOME/.local/bin:$PATH"
-fi
+add_to_path() {
+	if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+		echo 'export PATH="$HOME/.local/bin:$PATH"' >>~/.zshrc
+		export PATH="$HOME/.local/bin:$PATH"
+	fi
+}
+add_to_path
+
+# Function to install a tool if not already installed
+install_tool() {
+	local tool=$1
+	local install_cmd=$2
+
+	if ! is_installed "$tool"; then
+		echo "Installing $tool..."
+		eval "$install_cmd"
+		if is_installed "$tool"; then
+			echo "$tool installation successful."
+		else
+			echo "Error installing $tool."
+		fi
+	else
+		echo "$tool is already installed."
+	fi
+}
 
 # Install Neovim
-if ! is_installed nvim; then
-	if [ "$OS" == "ubuntu" ]; then
-		apt install -y neovim
-	elif [ "$OS" == "fedora" ]; then
-		dnf install -y neovim
-	fi
-else
-	echo "Neovim is already installed."
-fi
+install_tool "nvim" "curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz && sudo tar -C /opt -xzf nvim-linux64.tar.gz && export PATH=/opt/nvim-linux64/bin:\$PATH"
 
 # Install fzf
-if ! is_installed fzf; then
-	git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-	~/.fzf/install --all
-else
-	echo "fzf is already installed."
-fi
-
-# Install Lazyvim (via Neovim configuration)
-if [ ! -d "$HOME/.config/nvim" ]; then
-	git clone https://github.com/LazyVim/starter $HOME/.config/nvim
-	echo "Lazyvim installed in ~/.config/nvim"
-else
-	echo "Lazyvim is already configured."
-fi
+install_tool "fzf" "git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all"
 
 # Install Zsh
-if ! is_installed zsh; then
-	if [ "$OS" == "ubuntu" ]; then
-		apt install -y zsh
-	elif [ "$OS" == "fedora" ]; then
-		dnf install -y zsh
-	fi
-	chsh -s $(which zsh)
-else
-	echo "Zsh is already installed."
-fi
+install_tool "zsh" "if [ \"$OS\" == \"ubuntu\" ]; then apt install -y zsh; elif [ \"$OS\" == \"fedora\" ]; then dnf install -y zsh; fi && chsh -s \$(which zsh)"
 
 # Install Starship
-if ! is_installed starship; then
-	curl -sS https://starship.rs/install.sh | sh -s -- -y
-	echo 'eval "$(starship init zsh)"' >>~/.zshrc
-else
-	echo "Starship is already installed."
-fi
+install_tool "starship" "curl -sS https://starship.rs/install.sh | sh -s -- -y && echo 'eval \"\$(starship init zsh)\"' >>~/.zshrc"
 
 # Install Zsh-autosuggestions
 if [ ! -d "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]; then
@@ -94,71 +87,19 @@ else
 fi
 
 # Install Yazi
-if ! is_installed yazi; then
-	curl -Lo yazi.zip https://github.com/sxyazi/yazi/releases/download/v0.4.2/yazi-x86_64-unknown-linux-gnu.zip
-	unzip yazi.zip -d /usr/local/bin
-	mv /usr/local/bin/yazi-x86_64-unknown-linux-gnu/yazi /usr/local/bin/yazi
-	rm -rf /usr/local/bin/yazi-x86_64-unknown-linux-gnu yazi.zip
-else
-	echo "Yazi is already installed."
-fi
+install_tool "yazi" "curl -Lo yazi.zip https://github.com/sxyazi/yazi/releases/download/v0.4.2/yazi-x86_64-unknown-linux-gnu.zip && unzip yazi.zip -d /usr/local/bin && mv /usr/local/bin/yazi-x86_64-unknown-linux-gnu/yazi /usr/local/bin/yazi && rm -rf /usr/local/bin/yazi-x86_64-unknown-linux-gnu yazi.zip"
 
 # Install Eza
-if ! is_installed eza; then
-	if [ "$OS" == "ubuntu" ]; then
-		apt install -y exa
-	elif [ "$OS" == "fedora" ]; then
-		dnf install -y exa
-	fi
-else
-	echo "Eza is already installed."
-fi
+install_tool "eza" "if [ \"$OS\" == \"ubuntu\" ]; then mkdir -p /etc/apt/keyrings && wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg && echo \"deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main\" | sudo tee /etc/apt/sources.list.d/gierens.list && chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list && apt update && apt install -y eza; elif [ \"$OS\" == \"fedora\" ]; then dnf install -y eza; fi"
 
 # Install Zoxide
-if ! is_installed zoxide; then
-	curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
-	echo 'eval "$(zoxide init zsh)"' >>~/.zshrc
-else
-	echo "Zoxide is already installed."
-fi
+install_tool "zoxide" "curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/refs/heads/main/install.sh | bash && echo 'eval \"\$(zoxide init zsh)\"' >>~/.zshrc"
 
 # Install Zellij
-if ! is_installed zellij; then
-	curl -Lo zellij.tar.gz https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz
-	if tar -xzvf zellij.tar.gz -C /usr/local/bin; then
-		rm zellij.tar.gz
-	else
-		echo "Zellij installation failed"
-		rm -f zellij.tar.gz
-	fi
-else
-	echo "Zellij is already installed."
-fi
+install_tool "zellij" "curl -Lo zellij.tar.gz https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz && tar -xzvf zellij.tar.gz -C /usr/local/bin && rm zellij.tar.gz"
 
 # Install LazyGit
-if ! is_installed lazygit; then
-	LAZYGIT_VERSION=$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | grep 'tag_name' | cut -d '"' -f 4)
-	curl -Lo lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/download/$LAZYGIT_VERSION/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz
-	if tar -xzvf lazygit.tar.gz -C /usr/local/bin; then
-		rm lazygit.tar.gz
-	else
-		echo "LazyGit installation failed"
-		rm -f lazygit.tar.gz
-	fi
-else
-	echo "LazyGit is already installed."
-fi
-
-# Install Git
-if ! is_installed git; then
-	if [ "$OS" == "ubuntu" ]; then
-		apt install -y git
-	elif [ "$OS" == "fedora" ]; then
-		dnf install -y git
-	fi
-else
-	echo "Git is already installed."
-fi
+install_tool "lazygit" "LAZYGIT_VERSION=\$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | grep 'tag_name' | cut -d '"' -f 4) && curl -Lo lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/download/\$LAZYGIT_VERSION/lazygit_\$LAZYGIT_VERSION_Linux_x86_64.tar.gz && tar -xzvf lazygit.tar.gz -C /usr/local/bin && rm lazygit.tar.gz"
 
 # Apply changes
 source ~/.zshrc
