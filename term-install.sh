@@ -23,10 +23,10 @@ fi
 update_system() {
 	if [ "$OS" == "ubuntu" ]; then
 		apt update && apt upgrade -y
-		apt install -y curl git unzip build-essential gpg
+		apt install -y curl git unzip build-essential gpg stow
 	elif [ "$OS" == "fedora" ]; then
 		dnf update -y
-		dnf install -y curl git unzip gcc make
+		dnf install -y curl git unzip gcc make stow
 	else
 		echo "Unsupported operating system."
 		exit 1
