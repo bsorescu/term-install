@@ -32,6 +32,12 @@ is_installed() {
 	command -v "$1" >/dev/null 2>&1
 }
 
+# Add ~/.local/bin to PATH if not already present
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+	echo 'export PATH="$HOME/.local/bin:$PATH"' >>~/.zshrc
+	export PATH="$HOME/.local/bin:$PATH"
+fi
+
 # Install Neovim
 if ! is_installed nvim; then
 	if [ "$OS" == "ubuntu" ]; then
@@ -52,8 +58,8 @@ else
 fi
 
 # Install Lazyvim (via Neovim configuration)
-if [ ! -d "~/.config/nvim" ]; then
-	git clone https://github.com/LazyVim/starter ~/.config/nvim
+if [ ! -d "$HOME/.config/nvim" ]; then
+	git clone https://github.com/LazyVim/starter $HOME/.config/nvim
 	echo "Lazyvim installed in ~/.config/nvim"
 else
 	echo "Lazyvim is already configured."
@@ -89,7 +95,9 @@ fi
 
 # Install Yazi
 if ! is_installed yazi; then
-	curl -L https://github.com/sxyazi/yazi/releases/latest/download/yazi-x86_64-unknown-linux-gnu.tar.gz | tar xz -C /usr/local/bin
+	curl -Lo yazi.tar.gz https://github.com/sxyazi/yazi/releases/latest/download/yazi-x86_64-unknown-linux-gnu.tar.gz &&
+		tar -xzvf yazi.tar.gz -C /usr/local/bin || echo "Yazi installation failed"
+	rm -f yazi.tar.gz
 else
 	echo "Yazi is already installed."
 fi
@@ -97,7 +105,8 @@ fi
 # Install Eza
 if ! is_installed eza; then
 	if [ "$OS" == "ubuntu" ]; then
-		apt install -y eza
+		curl -Lo eza.deb https://github.com/eza-community/eza/releases/latest/download/eza.deb &&
+			apt install -y ./eza.deb && rm -f eza.deb
 	elif [ "$OS" == "fedora" ]; then
 		dnf install -y exa
 	fi
@@ -115,7 +124,9 @@ fi
 
 # Install Zellij
 if ! is_installed zellij; then
-	curl -sS https://get.zellij.dev | bash
+	curl -Lo zellij.tar.gz https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz &&
+		tar -xzvf zellij.tar.gz -C /usr/local/bin || echo "Zellij installation failed"
+	rm -f zellij.tar.gz
 else
 	echo "Zellij is already installed."
 fi
@@ -123,9 +134,8 @@ fi
 # Install LazyGit
 if ! is_installed lazygit; then
 	LAZYGIT_VERSION=$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | grep 'tag_name' | cut -d '"' -f 4)
-	curl -Lo lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/download/$LAZYGIT_VERSION/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz
-	tar xf lazygit.tar.gz -C /usr/local/bin lazygit
-	rm lazygit.tar.gz
+	curl -Lo lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/download/$LAZYGIT_VERSION/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz &&
+		tar xf lazygit.tar.gz -C /usr/local/bin lazygit && rm lazygit.tar.gz || echo "LazyGit installation failed"
 else
 	echo "LazyGit is already installed."
 fi
