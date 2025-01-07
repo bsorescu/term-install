@@ -101,6 +101,18 @@ install_tool "zellij" "curl -Lo zellij.tar.gz https://github.com/zellij-org/zell
 # Install LazyGit
 install_tool "lazygit" "LAZYGIT_VERSION=\$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | grep 'tag_name' | cut -d '\"' -f 4) && curl -Lo lazygit.tar.gz https://github.com/jesseduffield/lazygit/releases/download/\$LAZYGIT_VERSION/lazygit_\$LAZYGIT_VERSION_Linux_x86_64.tar.gz && tar -xzvf lazygit.tar.gz -C /usr/local/bin && rm lazygit.tar.gz"
 
+# Install LazyVim
+install_lazyvim() {
+	echo "Installing LazyVim..."
+	NVIM_CONFIG_DIR="$HOME/.config/nvim"
+	if [ ! -d "$NVIM_CONFIG_DIR" ]; then
+		git clone https://github.com/LazyVim/starter "$NVIM_CONFIG_DIR"
+	else
+		echo "Neovim configuration directory already exists. Skipping LazyVim installation."
+	fi
+}
+install_lazyvim
+
 # Apply changes
 source ~/.zshrc
 
