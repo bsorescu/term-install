@@ -67,7 +67,7 @@ install_tool() {
 }
 
 # Install Neovim
-install_tool "nvim" "curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz && sudo tar -C /opt -xzf nvim-linux64.tar.gz && export PATH=/opt/nvim-linux64/bin:\$PATH"
+install_tool "nvim" "curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz && sudo tar -C /opt -xzf nvim-linux64.tar.gz && echo 'export PATH=/opt/nvim-linux64/bin:\$PATH' >>~/.zshrc && rm nvim-linux64.tar.gz"
 
 # Install fzf
 install_tool "fzf" "git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --all"
@@ -117,4 +117,4 @@ install_lazyvim
 source ~/.zshrc
 
 # Finish
-echo "All programs have been installed and configured!"
+echo "All programs have been installed and configured!!"
